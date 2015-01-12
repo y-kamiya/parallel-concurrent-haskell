@@ -1,12 +1,7 @@
 import Data.List
-import Data.Tuple
-import Control.Monad.State
-
--- data Cell = [Int] | ((Cell,Cell,Cell),(Cell,Cell,Cell),(Cell,Cell,Cell)) deriving (Eq, Show)
 
 type Problem = [[Int]]
 type Candidate = [[[Int]]]
--- type Pos = (Int, Int)
 newtype Pos = Pos (Int, Int) deriving (Eq, Show)
 
 toPos :: (Int, Int) -> Pos
@@ -65,13 +60,28 @@ problemEasy = [[0,9,0,0,0,3,0,2,0]
               ,[4,0,6,0,0,5,8,3,0]
               ]
          
-lookupP :: Problem -> Pos -> Int
-lookupP pro (Pos (x,y)) = (pro !! x) !! y
+lookupPos :: [[a]] -> Pos -> a
+lookupPos p (Pos (x,y)) = (p !! x) !! y
 
 chunk :: [a] -> [[a]]
 chunk [] = [[]]
 chunk xs = h : chunk t
   where (h,t) = splitAt 9 xs
+
+pos2Cellnum :: Pos -> Int
+pos2Cellnum (Pos (x,y)) = (x `div` 3) * 3 + (y `div` 3)
+  
+cellnum2Pos :: Int -> Pos
+cellnum2Pos n = toPos ((*) 3 $ div n 3, (*) 3 $ mod n 3)
+
+extractRow, extractCol, extractCell :: [[a]] -> Pos -> [a]
+extractRow p (Pos (x,_)) = (!!x) p
+extractCol p (Pos (_,y)) = map (!!y) p
+extractCell p pos = concatMap (splice3 y) . splice3 x $ p
+  where
+    Pos (x, y) = cellnum2Pos . pos2Cellnum $ pos
+    splice3 :: Int -> [a] -> [a]
+    splice3 n = drop n . take (n+3)
 
 p2c :: Problem -> Candidate
 p2c problem = filter (not . null) $ chunk $ map (candidateInPos problem) ([minBound..maxBound]::[Pos])
@@ -89,56 +99,27 @@ decide :: Candidate -> Candidate
 decide = transposeCell . map decideRow . transposeCell
          . transpose . map decideRow . transpose 
          . map decideRow
--- decide = execState decideAction
 
--- decideAction :: State Candidate Int
--- decideAction = do
---   candidate <- get
---   let newCandidate = map decideRow candidate
---   put newCandidate
---   return 1
-
-transposeCell :: [[a]] -> [[a]]
-transposeCell candidate = map (extractCell candidate) cellCenters
-
-decideRow :: [[Int]] -> [[Int]]
+decideRow :: (Eq a, Ord a) => [[a]] -> [[a]]
 decideRow nss = map buildRow nss
   where
     decidedList = concat . filter (\es -> length es == 1) . group . sort . concat $ nss
-
-    buildRow :: [Int] -> [Int]
-    buildRow ns = list
+    buildRow ns = if length ns' == 1 then ns' else ns
       where
         ns' = ns `intersect` decidedList
-        list = if length ns' == 1
-                 then ns'
-                 else ns
 
+transposeCell :: [[a]] -> [[a]]
+transposeCell candidate = map (extractCell candidate) cellCenters
 
 candidateInPos :: Problem -> Pos -> [Int]
 candidateInPos problem pos
   | e == 0 = rowdiff `intersect` coldiff `intersect` celldiff 
   | otherwise = [e]
   where 
-    e = lookupP problem pos
+    e = lookupPos problem pos
     rowdiff = [1..9] \\ extractRow problem pos 
     coldiff = [1..9] \\ extractCol problem pos
     celldiff = [1..9] \\ extractCell problem pos
-
-extractRow, extractCol, extractCell :: [[a]] -> Pos -> [a]
-extractRow p (Pos (x,_)) = (!!x) p
-extractCol p (Pos (_,y)) = map (!!y) p
-extractCell p pos = concatMap (splice3 y) . splice3 x $ p
-  where
-    Pos (x, y) = cell2Pos . pos2Cell $ pos
-    splice3 :: Int -> [a] -> [a]
-    splice3 n = drop n . take (n+3)
-
-pos2Cell :: Pos -> Int
-pos2Cell (Pos (x,y)) = (x `div` 3) * 3 + (y `div` 3)
-  
-cell2Pos :: Int -> Pos
-cell2Pos n = toPos ((*) 3 $ div n 3, (*) 3 $ mod n 3)
 
 replace :: [[a]] -> Int -> [a] -> [[a]]
 replace p n xs 
@@ -154,24 +135,24 @@ validate p = if elem 0 $ concat p
   where
     validate' ns = null $ [1..9] \\ ns
 
-loopStage1 :: Problem -> Problem -> Problem
-loopStage1 problem prev 
+step1 :: Problem -> Problem -> Problem
+step1 problem prev 
   | problem == prev = problem
   | otherwise = let c = p2c problem
                     c' = decide c
                     p = c2p c'
-                in loopStage1 p problem
+                in step1 p problem
 
-tryN :: Problem -> Int -> Problem
-tryN p n 
+step2 :: Problem -> Int -> Problem
+step2 p n 
   | validate p == Solved = p
   | validate p == Wrong = [[]]
   | otherwise = let ps' = map (replace p n) $ sequence $ (p2c p) !! n
-                in  filter (not . null) $ concatMap (\p' -> tryN (loopStage1 p' [[]]) (n+1)) ps'
+                in  filter (not . null) $ concatMap (\p' -> step2 (step1 p' [[]]) (n+1)) ps'
+
+solve :: Problem -> Problem
+solve p = flip step2 0 $ step1 p [[]]
 
 main :: IO ()
-main = do
-  let tmp = loopStage1 problem [[]]
-  print tmp
-  print $ tryN tmp 0
+main = print $ solve problem
 
