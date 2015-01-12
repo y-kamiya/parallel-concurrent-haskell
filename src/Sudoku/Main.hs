@@ -37,6 +37,7 @@ cellCenters = map toPos [(1,1), (1,4), (1,7)
                         ,(7,1), (7,4), (7,7)
                         ]
 
+data ProblemState = NotSolved | Wrong | Solved deriving (Eq, Show)
 
 -- difficult
 problem :: Problem
@@ -52,17 +53,17 @@ problem = [[3,0,0,0,0,2,0,0,0]
           ]
 
 -- easy
--- problem :: Problem
--- problem = [[0,9,0,0,0,3,0,2,0]
---          , [7,0,2,6,0,0,5,4,0]
---          , [0,0,0,0,0,8,0,0,7]
---          , [1,4,0,8,0,0,0,0,3]
---          , [0,5,9,7,3,0,0,0,1]
---          , [8,6,0,1,0,9,7,5,2]
---          , [9,2,1,3,0,4,6,0,5]
---          , [0,8,0,9,0,7,2,1,4]
---          , [4,0,6,0,0,5,8,3,0]
---          ]
+problemEasy :: Problem
+problemEasy = [[0,9,0,0,0,3,0,2,0]
+              ,[7,0,2,6,0,0,5,4,0]
+              ,[0,0,0,0,0,8,0,0,7]
+              ,[1,4,0,8,0,0,0,0,3]
+              ,[0,5,9,7,3,0,0,0,1]
+              ,[8,6,0,1,0,9,7,5,2]
+              ,[9,2,1,3,0,4,6,0,5]
+              ,[0,8,0,9,0,7,2,1,4]
+              ,[4,0,6,0,0,5,8,3,0]
+              ]
          
 lookupP :: Problem -> Pos -> Int
 lookupP pro (Pos (x,y)) = (pro !! x) !! y
@@ -85,7 +86,9 @@ c2p = map (map convert)
       | otherwise = 0
 
 decide :: Candidate -> Candidate
-decide = transpose . map decideRow . transpose . map decideRow
+decide = transposeCell . map decideRow . transposeCell
+         . transpose . map decideRow . transpose 
+         . map decideRow
 -- decide = execState decideAction
 
 -- decideAction :: State Candidate Int
@@ -95,8 +98,8 @@ decide = transpose . map decideRow . transpose . map decideRow
 --   put newCandidate
 --   return 1
 
--- transposeCell :: Candidate -> Candidate
--- transposeCell candidate = map (extractCell candidate) cellCenters
+transposeCell :: [[a]] -> [[a]]
+transposeCell candidate = map (extractCell candidate) cellCenters
 
 decideRow :: [[Int]] -> [[Int]]
 decideRow nss = map buildRow nss
@@ -122,8 +125,7 @@ candidateInPos problem pos
     coldiff = [1..9] \\ extractCol problem pos
     celldiff = [1..9] \\ extractCell problem pos
 
-
-extractRow, extractCol, extractCell :: Problem -> Pos -> [Int]
+extractRow, extractCol, extractCell :: [[a]] -> Pos -> [a]
 extractRow p (Pos (x,_)) = (!!x) p
 extractCol p (Pos (_,y)) = map (!!y) p
 extractCell p pos = concatMap (splice3 y) . splice3 x $ p
@@ -138,14 +140,38 @@ pos2Cell (Pos (x,y)) = (x `div` 3) * 3 + (y `div` 3)
 cell2Pos :: Int -> Pos
 cell2Pos n = toPos ((*) 3 $ div n 3, (*) 3 $ mod n 3)
 
+replace :: [[a]] -> Int -> [a] -> [[a]]
+replace p n xs 
+  | 0 <= n || n <= 8 = take n p ++ [xs] ++ drop (n+1) p
+  | otherwise = p
+
+validate :: Problem -> ProblemState
+validate p = if elem 0 $ concat p 
+               then NotSolved
+               else case all validate' $ p ++ transpose p ++ transposeCell p of
+                      True -> Solved
+                      False -> Wrong
+  where
+    validate' ns = null $ [1..9] \\ ns
+
+loopStage1 :: Problem -> Problem -> Problem
+loopStage1 problem prev 
+  | problem == prev = problem
+  | otherwise = let c = p2c problem
+                    c' = decide c
+                    p = c2p c'
+                in loopStage1 p problem
+
+tryN :: Problem -> Int -> Problem
+tryN p n 
+  | validate p == Solved = p
+  | validate p == Wrong = [[]]
+  | otherwise = let ps' = map (replace p n) $ sequence $ (p2c p) !! n
+                in  filter (not . null) $ concatMap (\p' -> tryN (loopStage1 p' [[]]) (n+1)) ps'
 
 main :: IO ()
 main = do
-  print $ loop problem [[]]
-  where
-    loop problem prev 
-      | problem == prev = problem
-      | otherwise = let c = p2c problem
-                        c' = decide c
-                        p = c2p c'
-                    in loop p problem
+  let tmp = loopStage1 problem [[]]
+  print tmp
+  print $ tryN tmp 0
+
