@@ -1,5 +1,6 @@
 import Data.List
 import Data.Tuple
+import Control.Monad.State
 
 -- data Cell = [Int] | ((Cell,Cell,Cell),(Cell,Cell,Cell),(Cell,Cell,Cell)) deriving (Eq, Show)
 
@@ -30,6 +31,12 @@ instance Bounded Pos where
   minBound = Pos (0,0)
   maxBound = Pos (8,8)
   
+cellCenters :: [Pos]
+cellCenters = map toPos [(1,1), (1,4), (1,7)
+                        ,(4,1), (4,4), (4,7)
+                        ,(7,1), (7,4), (7,7)
+                        ]
+
 
 -- difficult
 problem :: Problem
@@ -78,7 +85,31 @@ c2p = map (map convert)
       | otherwise = 0
 
 decide :: Candidate -> Candidate
-decide = id
+decide = transpose . map decideRow . transpose . map decideRow
+-- decide = execState decideAction
+
+-- decideAction :: State Candidate Int
+-- decideAction = do
+--   candidate <- get
+--   let newCandidate = map decideRow candidate
+--   put newCandidate
+--   return 1
+
+-- transposeCell :: Candidate -> Candidate
+-- transposeCell candidate = map (extractCell candidate) cellCenters
+
+decideRow :: [[Int]] -> [[Int]]
+decideRow nss = map buildRow nss
+  where
+    decidedList = concat . filter (\es -> length es == 1) . group . sort . concat $ nss
+
+    buildRow :: [Int] -> [Int]
+    buildRow ns = list
+      where
+        ns' = ns `intersect` decidedList
+        list = if length ns' == 1
+                 then ns'
+                 else ns
 
 
 candidateInPos :: Problem -> Pos -> [Int]
@@ -87,15 +118,15 @@ candidateInPos problem pos
   | otherwise = [e]
   where 
     e = lookupP problem pos
-    rowdiff = [1..9] \\ findRow problem pos 
-    coldiff = [1..9] \\ findCol problem pos
-    celldiff = [1..9] \\ findCell problem pos
+    rowdiff = [1..9] \\ extractRow problem pos 
+    coldiff = [1..9] \\ extractCol problem pos
+    celldiff = [1..9] \\ extractCell problem pos
 
 
-findRow, findCol, findCell :: Problem -> Pos -> [Int]
-findRow p (Pos (x,_)) = (!!x) p
-findCol p (Pos (_,y)) = map (!!y) p
-findCell p pos = concatMap (splice3 y) . splice3 x $ p
+extractRow, extractCol, extractCell :: Problem -> Pos -> [Int]
+extractRow p (Pos (x,_)) = (!!x) p
+extractCol p (Pos (_,y)) = map (!!y) p
+extractCell p pos = concatMap (splice3 y) . splice3 x $ p
   where
     Pos (x, y) = cell2Pos . pos2Cell $ pos
     splice3 :: Int -> [a] -> [a]
