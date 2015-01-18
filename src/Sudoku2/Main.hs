@@ -27,31 +27,38 @@ toProblem = toProblem' 0
       | c == '.' = toProblem' (n+1) cs
       | otherwise = ((n `div` 9, n `mod` 9), readInt c) : toProblem' (n+1) cs
 
-extractRow, extractCol, extractBlock :: Problem -> Pos -> [Int]
-extractRow p (x,_) = map snd $ filter (\((x',_), _) -> x' == x) p
-extractCol p (_,y) = map snd $ filter (\((_,y'), _) -> y' == y) p
-extractBlock p pos = map snd $ filter (\(pos',_) -> pos' `elem` poss) p
-  where
-    poss = cellnum2Poss . pos2Blocknum $ pos
+-- extractRow, extractCol, extractBlock :: Problem -> Pos -> [Int]
+-- extractRow p (x,_) = map snd $ filter (\((x',_), _) -> x' == x) p
+-- extractCol p (_,y) = map snd $ filter (\((_,y'), _) -> y' == y) p
+-- extractBlock p pos = map snd $ filter (\(pos',_) -> pos' `elem` poss) p
+--   where
+--     poss = cellnum2Poss . pos2Blocknum $ pos
 
 
 pos2Blocknum :: Pos -> Int
 pos2Blocknum (x,y) = (x `div` 3) * 3 + (y `div` 3)
 
-cellnum2Poss :: Int -> [Pos]
-cellnum2Poss n = [(x,y) 
-                 | let x' = n `div` 3 * 3
-                 , let y' = n `mod` 3 * 3
-                 , x <- [x'..x'+2]
-                 , y <- [y'..y'+2]
-                 ]
+-- cellnum2Poss :: Int -> [Pos]
+-- cellnum2Poss n = [(x,y) 
+--                  | let x' = n `div` 3 * 3
+--                  , let y' = n `mod` 3 * 3
+--                  , x <- [x'..x'+2]
+--                  , y <- [y'..y'+2]
+--                  ]
 
 candidate :: Problem -> Pos -> [Int]
-candidate p pos = rowdiff `intersect` coldiff `intersect` celldiff 
-  where 
-    rowdiff = [1..9] \\ extractRow p pos 
-    coldiff = [1..9] \\ extractCol p pos
-    celldiff = [1..9] \\ extractBlock p pos
+candidate p pos = [1..9] \\ used p pos
+
+used :: Problem -> Pos -> [Int]
+used p pos = [ v
+             | (pos', v) <- p
+             , any (\f -> f pos == f pos') [fst, snd, pos2Blocknum]
+             ]
+-- candidate p pos = rowdiff `intersect` coldiff `intersect` celldiff 
+--   where 
+--     rowdiff = [1..9] \\ extractRow p pos 
+--     coldiff = [1..9] \\ extractCol p pos
+--     celldiff = [1..9] \\ extractBlock p pos
 
 
 solve :: Problem -> [Problem]
