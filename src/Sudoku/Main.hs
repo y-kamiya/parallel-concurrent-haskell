@@ -1,4 +1,5 @@
 import Data.List
+import Control.Parallel.Strategies
 
 type Problem = [[Int]]
 type Candidate = [[[Int]]]
@@ -153,6 +154,17 @@ step2 p n
 solve :: Problem -> Problem
 solve p = flip step2 0 $ step1 p [[]]
 
+translate :: Char -> Char
+translate '.' = '0'
+translate x = x
+
+readInt :: Char -> Int
+readInt x = read [x]
+
 main :: IO ()
-main = print $ solve problem
+main = do
+  contents <- readFile "data/Sudoku/sudoku.txt" 
+  let problems = map (filter (not . null) . chunk . map (readInt . translate)) $ lines contents
+  -- print $ map (\p -> step1 p [[]]) problems
+  print $ parMap rseq solve problems
 
