@@ -1,5 +1,6 @@
 import Data.List
 import Data.Function (on)
+import Control.Parallel.Strategies
 
 type Pos = (Int, Int) 
 type Cell = (Pos, Int)
@@ -74,7 +75,6 @@ solve p
 main :: IO ()
 main = do
   contents <- readFile "data/Sudoku/sudoku.txt"
-  let problems = map toProblem $ lines contents
-      solutions = map solve problems
-  mapM_ (showSolution . head) $ filter (not . null) solutions
+  let solutions = parMap rdeepseq (head . filter (not . null) . solve . toProblem) $ lines contents
+  mapM_ showSolution solutions
 
