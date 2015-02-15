@@ -5,6 +5,7 @@ import System.Environment
 import Text.Printf
 
 import Logger
+import qualified Phonebook as P
 
 main :: IO ()
 main = do
@@ -15,7 +16,15 @@ main = do
     "reminder2" -> reminder2
     "mvar" -> mvar
     "logger" -> logger
+    "phone" -> phone
     _ -> print "no such argument"
+
+phone :: IO ()
+phone = do
+  s <- P.new
+  sequence_ [ P.insert s ("name" ++ show n) (show n) | n <- [1..1000] ]
+  P.lookup s "name1" >>= print
+  P.lookup s "dummy" >>= print
 
 logger :: IO ()
 logger = do
