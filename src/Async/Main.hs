@@ -17,6 +17,14 @@ import System.Environment
 
 data Async a = Async (MVar (Either SomeException a))
 
+sites :: [String]
+sites = [ "http://www.google.com"
+        , "http://www.bing.com"
+        , "http://www.yahoo.com"
+        , "http://www.wikipedia.com/wiki/Spade"
+        , "http://www.wikipedia.com/wiki/Shovel"
+        ]
+
 async :: IO a -> IO (Async a)
 async action = do
   mvar <- newEmptyMvar
