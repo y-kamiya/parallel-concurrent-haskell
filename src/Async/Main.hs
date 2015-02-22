@@ -2,18 +2,38 @@ import Control.Concurrent
 import Network.HTTP
 import System.Environment
 
-data Async a = Async (MVar a)
+-- data Async a = Async (MVar a)
+--
+-- async :: IO a -> IO (Async a)
+-- async action = do
+--   mvar <- newEmptyMvar
+--   forkIO $ do
+--     r <- action
+--     putMVar mvar r
+--   return (Async mvar)
+--
+-- wait :: Async a -> IO a
+-- wait (Async mvar) = readMVar mvar
+
+data Async a = Async (MVar (Either SomeException a))
 
 async :: IO a -> IO (Async a)
 async action = do
   mvar <- newEmptyMvar
   forkIO $ do
-    r <- action
-    putMVar mvar r
+    e <- try action
+    putMVar mvar e
   return (Async mvar)
 
 wait :: Async a -> IO a
-wait (Async mvar) = readMVar mvar
+wait a = do
+  e <- waitCatch a
+  case e of
+    Left exception -> throwIO exception
+    Right r -> return r
+
+waitCatch :: Async a -> IO (Either SomeException a)
+watiCatch (Async mvar) = readMVar mvar
 
 getURL :: String -> IO String
 getURL url = simpleHTTP (getRequest url) >>= getResponseBody
@@ -24,6 +44,8 @@ main = do
   case arg of
     "1" -> geturl1
     "2" -> geturl2
+    "5" -> geturl5
+    "6" -> geturl6
     _ -> print "no such arguments"
 
 geturl1 :: IO ()
@@ -47,3 +69,38 @@ geturl2 = do
   r1 <- wait a1
   r2 <- wait a2
   print (length r1, length r2)
+
+geturl5 :: IO ()
+geturl5 = do
+  m <- newEmptyMVar
+  let 
+    download url = do
+      r <- getURL url
+      putMVar m (url, r)
+  mapM_ (forkIO . download) sites
+
+  (url, r) <- takeMVar m
+  printf "%s was first (%d bytes)\n" url (length r)
+  replicateM_ (length sites - 1) $ takeMVar m
+
+waitAny :: [Async a] -> IO a
+waitAny as = do
+  mvar <- newEmptyMVar
+  let 
+    forkWait a = forkIO $ do
+      r <- try $ wait a
+      putMVar mvar r
+  mapM_ forkWait as
+  wait $ Async mvar
+
+geturl6 :: IO ()
+geturl6 = do
+  let 
+    download url = do
+      r <- getURL url
+      return (url, r)
+  as <- mapM_ (async . download) sites
+  (url, r) <- waitAny as
+  printf "%s was first (%d bytes)" url r
+  mapM_ wait as
+  
