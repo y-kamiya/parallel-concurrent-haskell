@@ -69,3 +69,20 @@ geturl7 = do
 
   rs <- mapM waitCatch as
   printf "%d/%d succeeded\n" (length (rights rs)) (length rs)
+
+timeout :: Int -> IO a -> IO (Maybe a)
+timeout t m 
+  | t < 0 = fmap Just m
+  | t == 0 = return Nothing
+  | otherwise = do
+    pid <- myThreadId
+    u <- newUnique
+    let ex = Timeout u
+    handleJust
+      (\e -> if e == ex then Just () else Nothing)
+      (\_ -> return Nothing)
+      (bracket 
+        (forkIO $ do threadDelay t; throwTo pid ex)
+        (\tid -> throwTo tid ThreadKilled)
+        (\_ -> fmap Just m))
+
