@@ -1,11 +1,12 @@
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
+import Control.Monad (forever)
 import Control.Monad.STM
-import Control.Monad.IO.Class
+import System.Environment
 import qualified Data.Set as S
 import qualified Data.Map as M
-import System.Environment
 
+import Display
 import TMVar
 
 main :: IO ()
@@ -14,6 +15,7 @@ main = do
   case arg of
     "window_mvar" -> window_mvar
     "window_tvar" -> window_tvar
+    "render_focus" -> render_focus
     "tmvar" -> tmvar
 
 tmvar :: IO ()
@@ -88,32 +90,19 @@ window_tvar = do
   print $ "Desktop 2 after: " ++ show desktop2
   return ()
 
-newtype Window = Window String deriving (Eq, Show, Ord)
-            
-newtype Desktop = Desktop Int deriving (Eq, Show, Ord)
+render_focus :: IO ()
+render_focus = do
+  tvar1 <- newTVarIO $ S.fromList [Window "A"]
+  tvar2 <- newTVarIO $ S.fromList [Window "B"]
+  let disp = M.fromList [(Desktop 1, tvar1), (Desktop 2, tvar2)]
 
-type DisplayMVar = M.Map Desktop (MVar (S.Set Window))
+  focus <- newTVarIO $ Desktop 1
+  _ <- forkIO $ forever $ do
+    putStr "please input focus [1 or 2]: "
+    input <- getLine
+    atomically $ writeTVar focus $ Desktop (read input :: Int)
+  
+  renderThread disp focus
+  return ()
 
-moveWindow :: DisplayMVar -> Window -> Desktop -> Desktop -> IO ()
-moveWindow disp w da db = do
-  wa <- takeMVar ma
-  print "lock Desktop passed by third args"
-  wb <- takeMVar mb
-  putMVar ma $ S.delete w wa
-  putMVar mb $ S.insert w wb
-  where
-    ma = disp M.! da
-    mb = disp M.! db
-
-type DisplayTVar = M.Map Desktop (TVar (S.Set Window))
-
-moveWindowSTM :: DisplayTVar -> Window -> Desktop -> Desktop -> STM ()
-moveWindowSTM disp w da db = do
-  wa <- readTVar ma
-  wb <- readTVar mb
-  writeTVar ma $ S.delete w wa
-  writeTVar mb $ S.insert w wb
-  where
-    ma = disp M.! da
-    mb = disp M.! db
 
