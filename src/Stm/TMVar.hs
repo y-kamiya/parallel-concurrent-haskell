@@ -26,5 +26,6 @@ putTMVar (TMVar tvar) a = do
     Just _ -> retry
     Nothing -> void $ writeTVar tvar (Just a)
 
-
+takeEitherTMVar :: TMVar a -> TMVar b -> STM (Either a b)
+takeEitherTMVar ma mb = fmap Left (takeTMVar ma) `orElse` fmap Right (takeTMVar mb)
 

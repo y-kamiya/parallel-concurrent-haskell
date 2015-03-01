@@ -3,11 +3,15 @@ import Control.Concurrent.STM.TVar
 import Control.Monad (forever)
 import Control.Monad.STM
 import System.Environment
+import Text.Printf
 import qualified Data.Set as S
 import qualified Data.Map as M
 
+import Url
+
 import Display
 import TMVar
+import Async
 
 main :: IO ()
 main = do
@@ -17,6 +21,17 @@ main = do
     "window_tvar" -> window_tvar
     "render_focus" -> render_focus
     "tmvar" -> tmvar
+    "geturl" -> geturl
+
+geturl :: IO ()
+geturl = do
+  let 
+    download url = do
+      r <- getURL url
+      return (url, r)
+  as <- mapM (async . download) sites
+  (url, r) <- waitAny as
+  printf "%s was first (%d bytes)" url (length r)
 
 tmvar :: IO ()
 tmvar = do

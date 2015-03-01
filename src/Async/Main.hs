@@ -1,12 +1,16 @@
+import Control.Monad
+import Control.Exception
 import Control.Concurrent
-import Network.HTTP
 import System.Environment
+import Text.Printf
+
+import Url
 
 -- data Async a = Async (MVar a)
 --
 -- async :: IO a -> IO (Async a)
 -- async action = do
---   mvar <- newEmptyMvar
+--   mvar <- newEmptyMVar
 --   forkIO $ do
 --     r <- action
 --     putMVar mvar r
@@ -17,17 +21,8 @@ import System.Environment
 
 data Async a = Async (MVar (Either SomeException a))
 
-sites :: [String]
-sites = [ "http://www.google.com"
-        , "http://www.bing.com"
-        , "http://www.yahoo.com"
-        , "http://www.wikipedia.com/wiki/Spade"
-        , "http://www.wikipedia.com/wiki/Shovel"
-        ]
-
-async :: IO a -> IO (Async a)
 async action = do
-  mvar <- newEmptyMvar
+  mvar <- newEmptyMVar
   forkIO $ do
     e <- try action
     putMVar mvar e
@@ -41,10 +36,7 @@ wait a = do
     Right r -> return r
 
 waitCatch :: Async a -> IO (Either SomeException a)
-watiCatch (Async mvar) = readMVar mvar
-
-getURL :: String -> IO String
-getURL url = simpleHTTP (getRequest url) >>= getResponseBody
+waitCatch (Async mvar) = readMVar mvar
 
 main :: IO ()
 main = do
@@ -107,7 +99,7 @@ geturl6 = do
     download url = do
       r <- getURL url
       return (url, r)
-  as <- mapM_ (async . download) sites
+  as <- mapM (async . download) sites
   (url, r) <- waitAny as
   printf "%s was first (%d bytes)" url r
   mapM_ wait as

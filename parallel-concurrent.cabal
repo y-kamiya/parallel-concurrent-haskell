@@ -15,6 +15,15 @@ build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
 
+library
+   exposed-modules:    Url
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base >=4.6 && <5.0
+                      ,HTTP
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
 executable kmeans
   main-is:             Main.hs
   -- other-modules:
@@ -112,6 +121,7 @@ executable async
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.6 && <5.0
+                      ,parallel-concurrent
                       ,HTTP
   hs-source-dirs:      src/Async
   default-language:    Haskell2010
@@ -133,9 +143,10 @@ executable stm
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.6 && <5.0
-                     , containers
-                     , stm
-                     , transformers
+                      ,parallel-concurrent
+                      ,containers
+                      ,stm
+                      ,transformers
   hs-source-dirs:      src/Stm
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -eventlog
