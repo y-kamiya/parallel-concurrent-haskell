@@ -1,9 +1,12 @@
 import Control.Concurrent
-import Control.Concurrent.STM
+import Control.Concurrent.STM.TVar
+import Control.Monad.STM
 import Control.Monad.IO.Class
 import qualified Data.Set as S
 import qualified Data.Map as M
 import System.Environment
+
+import TMVar
 
 main :: IO ()
 main = do
@@ -11,6 +14,22 @@ main = do
   case arg of
     "window_mvar" -> window_mvar
     "window_tvar" -> window_tvar
+    "tmvar" -> tmvar
+
+tmvar :: IO ()
+tmvar = do
+  tmvar1 <- atomically $ newEmptyTMVar
+  tmvar2 <- atomically $ newEmptyTMVar
+  forkIO $ do
+    print "put 1 to tmvar1"
+    atomically $ putTMVar tmvar1 1
+  forkIO $ do
+    print "put 2 to tmvar2"
+    atomically $ putTMVar tmvar2 2
+  m1 <- atomically $ takeTMVar tmvar1
+  m2 <- atomically $ takeTMVar tmvar2
+  print m2
+  print m1
 
 window_mvar :: IO ()
 window_mvar = do
