@@ -1,6 +1,7 @@
 module TQueue where
 
-import Control.Concurrent.STM
+import Control.Monad.STM
+import Control.Concurrent.STM.TVar
 
 data TQueue a = TQueue (TVar [a]) (TVar [a])
 

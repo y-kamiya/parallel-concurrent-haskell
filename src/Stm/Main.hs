@@ -1,6 +1,6 @@
 import Control.Concurrent
 import Control.Concurrent.STM.TVar
-import Control.Monad (forever)
+import Control.Monad
 import Control.Monad.STM
 import System.Environment
 import Text.Printf
@@ -27,16 +27,34 @@ main = do
     "tlist" -> tlist
     "mlist" -> mlist
 
+-- not work because both writeMList and readMList call takeMVar
+mlist :: IO ()
+mlist = do
+  l <- newMList
+  _ <- forkIO $ replicateM_ 1 $ do
+    print "before writeMList"
+    writeMList l "123"
+    print "after writeMList"
+  -- _ <-forkIO $ forever $ do
+  --   s <- readMList l
+  --   print $ "fork thread: " ++  s
+  replicateM_ 1 $ do
+    print "before readMList"
+    s <- readMList l
+    print $ "main thread: " ++  s
+  return ()
+
 tlist :: IO ()
 tlist = do
   l <- atomically newTList
-  forkIO $ forever $ atomically $ writeTList l "123"
-  forkIO $ forever $ do
+  _ <- forkIO $ replicateM_ 100 $ atomically $ writeTList l "123"
+  _ <-forkIO $ forever $ do
     s <- atomically $ readTList l
     print $ "fork thread: " ++  s
-  forever $ do
+  replicateM_ 10 $ do
     s <- atomically $ readTList l
     print $ "main thread: " ++  s
+  return ()
 
 geturl :: IO ()
 geturl = do
