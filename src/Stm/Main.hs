@@ -12,6 +12,8 @@ import Url
 import Display
 import TMVar
 import Async
+import TList
+import TQueue
 
 main :: IO ()
 main = do
@@ -22,6 +24,19 @@ main = do
     "render_focus" -> render_focus
     "tmvar" -> tmvar
     "geturl" -> geturl
+    "tlist" -> tlist
+    "mlist" -> mlist
+
+tlist :: IO ()
+tlist = do
+  l <- atomically newTList
+  forkIO $ forever $ atomically $ writeTList l "123"
+  forkIO $ forever $ do
+    s <- atomically $ readTList l
+    print $ "fork thread: " ++  s
+  forever $ do
+    s <- atomically $ readTList l
+    print $ "main thread: " ++  s
 
 geturl :: IO ()
 geturl = do
