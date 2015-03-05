@@ -151,3 +151,18 @@ executable stm
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -eventlog
 
+executable server
+  main-is:             Main.hs
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base >=4.6 && <5.0
+                      ,parallel-concurrent
+                      ,containers
+                      ,stm
+                      ,transformers
+                      ,network
+                      ,async
+  hs-source-dirs:      src/Server
+  default-language:    Haskell2010
+  ghc-options:         -O2 -threaded -rtsopts -eventlog
+
