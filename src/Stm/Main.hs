@@ -30,29 +30,29 @@ main = do
 -- not work because both writeMList and readMList call takeMVar
 mlist :: IO ()
 mlist = do
-  l <- newMList
+  l <- TList.newMList
   _ <- forkIO $ replicateM_ 1 $ do
     print "before writeMList"
-    writeMList l "123"
+    TList.writeMList l "123"
     print "after writeMList"
   -- _ <-forkIO $ forever $ do
   --   s <- readMList l
   --   print $ "fork thread: " ++  s
   replicateM_ 1 $ do
     print "before readMList"
-    s <- readMList l
+    s <- TList.readMList l
     print $ "main thread: " ++  s
   return ()
 
 tlist :: IO ()
 tlist = do
-  l <- atomically newTList
-  _ <- forkIO $ replicateM_ 100 $ atomically $ writeTList l "123"
+  l <- atomically TList.newTList
+  _ <- forkIO $ replicateM_ 100 $ atomically $ TList.writeTList l "123"
   _ <-forkIO $ forever $ do
-    s <- atomically $ readTList l
+    s <- atomically $ TList.readTList l
     print $ "fork thread: " ++  s
   replicateM_ 10 $ do
-    s <- atomically $ readTList l
+    s <- atomically $ TList.readTList l
     print $ "main thread: " ++  s
   return ()
 
@@ -76,8 +76,8 @@ tmvar = do
   forkIO $ do
     print "put 2 to tmvar2"
     atomically $ putTMVar tmvar2 2
-  m1 <- atomically $ takeTMVar tmvar1
-  m2 <- atomically $ takeTMVar tmvar2
+  m1 <- atomically $ TMVar.takeTMVar tmvar1
+  m2 <- atomically $ TMVar.takeTMVar tmvar2
   print m2
   print m1
 
@@ -94,12 +94,12 @@ window_mvar = do
 
   checkThread1 <- newEmptyMVar
   _ <- forkIO $ do
-    moveWindow disp (Window "A") (Desktop 1) (Desktop 2)
+    Display.moveWindow disp (Window "A") (Desktop 1) (Desktop 2)
     putMVar checkThread1 "finished"
 
   checkThread2 <- newEmptyMVar
   _ <- forkIO $ do
-    moveWindow disp (Window "B") (Desktop 2) (Desktop 1)
+    Display.moveWindow disp (Window "B") (Desktop 2) (Desktop 1)
     putMVar checkThread2 "finished"
 
   takeMVar checkThread1
@@ -119,13 +119,13 @@ window_tvar = do
 
   checkThread1 <- newEmptyMVar
   _ <- forkIO $ do
-    atomically $ moveWindowSTM disp (Window "A") (Desktop 1) (Desktop 2)
+    atomically $ Display.moveWindowSTM disp (Window "A") (Desktop 1) (Desktop 2)
     putMVar checkThread1 "finished"
     print "moved Window A to Desktop 2"
 
   checkThread2 <- newEmptyMVar
   _ <- forkIO $ do
-    atomically $ moveWindowSTM disp (Window "B") (Desktop 2) (Desktop 1)
+    atomically $ Display.moveWindowSTM disp (Window "B") (Desktop 2) (Desktop 1)
     putMVar checkThread2 "finished"
     print "moved Window B to Desktop 1"
 
@@ -150,7 +150,7 @@ render_focus = do
     input <- getLine
     atomically $ writeTVar focus $ Desktop (read input :: Int)
   
-  renderThread disp focus
+  Display.renderThread disp focus
   return ()
 
 
