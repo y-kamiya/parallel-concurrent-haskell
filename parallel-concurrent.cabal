@@ -166,3 +166,13 @@ executable server
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -eventlog
 
+executable find
+  main-is:             Main.hs
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base >=4.6 && <5.0
+                      ,parallel-concurrent
+  hs-source-dirs:      src/Find
+  default-language:    Haskell2010
+  ghc-options:         -O2 -threaded -rtsopts -eventlog
+
