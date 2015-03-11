@@ -172,6 +172,9 @@ executable find
   -- other-extensions:
   build-depends:       base >=4.6 && <5.0
                       ,parallel-concurrent
+                      ,directory
+                      ,filepath
+                      ,async
   hs-source-dirs:      src/Find
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -eventlog
