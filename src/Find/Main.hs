@@ -4,9 +4,11 @@ import System.FilePath ((</>))
 import Data.List (sort)
 import Control.Concurrent (getNumCapabilities)
 import Control.Concurrent.Async
+import Control.Monad.Par.IO (runParIO)
 
 import qualified FindParSem as Sem
 import qualified FindParSemIORef as IORef
+import qualified FindParIO as ParIO
 
 main :: IO ()
 main = do
@@ -16,6 +18,10 @@ main = do
     "find_par" -> print =<< find_par_main args
     "find_par_sem" -> print =<< find_par_sem args
     "find_par_sem_ioref" -> print =<< find_par_sem_ioref args
+    "find_par_io" -> print =<< find_par_io args
+
+find_par_io :: [String] -> IO (Maybe FilePath)
+find_par_io (filename:dir:[]) = runParIO $ ParIO.find filename dir
 
 find_par_sem :: [String] -> IO (Maybe FilePath)
 find_par_sem (filename:dir:n:[]) = do

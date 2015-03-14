@@ -175,6 +175,9 @@ executable find
                       ,directory
                       ,filepath
                       ,async
+                      ,monad-par
+                      ,abstract-par
+                      ,transformers
   hs-source-dirs:      src/Find
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -eventlog
