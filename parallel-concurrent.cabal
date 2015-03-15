@@ -182,3 +182,16 @@ executable find
   default-language:    Haskell2010
   ghc-options:         -O2 -threaded -rtsopts -eventlog
 
+executable distributed
+  main-is:             Main.hs
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base >=4.6 && <5.0
+                      ,parallel-concurrent
+                      ,distributed-process
+                      ,template-haskell
+                      ,binary
+  hs-source-dirs:      src/Distributed
+  default-language:    Haskell2010
+  ghc-options:         -O2 -threaded -rtsopts -eventlog
+
