@@ -24,7 +24,7 @@ find_par_io :: [String] -> IO (Maybe FilePath)
 find_par_io (filename:dir:[]) = runParIO $ ParIO.find filename dir
 
 find_par_sem :: [String] -> IO (Maybe FilePath)
-find_par_sem (filename:dir:n:[]) = do
+find_par_sem (n:filename:dir:[]) = do
   sem <- Sem.newNBSem $ read n
   Sem.find sem filename dir
 
