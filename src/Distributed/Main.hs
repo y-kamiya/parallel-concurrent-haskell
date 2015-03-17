@@ -9,7 +9,8 @@ import GHC.Generics
 import Control.Distributed.Process hiding (Message(..))
 import Control.Distributed.Process.Serializable
 import Control.Distributed.Process.Internal.Closure.TH
--- import Language.Haskell.TH
+
+import DistribMain
 
 data Message = Ping ProcessId
              | Pong ProcessId
@@ -24,7 +25,7 @@ pingServer = do
   mypid <- getSelfPid
   send from $ Pong mypid
 
--- remotable ['pingServer]
+$(remotable ['pingServer])
 
 master :: Process ()
 master = do

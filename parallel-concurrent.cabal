@@ -189,6 +189,7 @@ executable distributed
   build-depends:       base >=4.6 && <5.0
                       ,parallel-concurrent
                       ,distributed-process
+                      ,distributed-process-simplelocalnet
                       ,template-haskell
                       ,binary
   hs-source-dirs:      src/Distributed
