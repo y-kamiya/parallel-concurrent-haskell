@@ -69,6 +69,13 @@ masterMulti peers = do
         Pong p -> waitForPongs $ filter (/= p) ps
         _ -> say "master received ping" >> terminate
   
+_master :: Process ()
+_master = do
+  (sp, rp) <- newChan :: Process (SendPort String, ReceivePort String)
+  spawnLocal $ sendChan sp "hello"
+  m <- receiveChan rp
+  say $ show m
+
 main :: IO ()
 main = do
   (command:args) <- getArgs
@@ -76,4 +83,5 @@ main = do
     "simple" -> withArgs args $ distribMain (\_ -> master) Main.__remoteTable
     "multi" -> withArgs args $ distribMain  masterMulti Main.__remoteTable
     "channel" -> withArgs args $ distribMain Channel.master Main.__remoteTable
+    "demo" -> withArgs args $ distribMain (\_ -> _master) Main.__remoteTable
 
