@@ -12,6 +12,9 @@ import Control.Monad
 import Control.Distributed.Process hiding (Message(..))
 import Control.Distributed.Process.Serializable
 import Control.Distributed.Process.Internal.Closure.TH
+import qualified Control.Distributed.Process.Management.Internal.Trace.Remote as TR
+import qualified Control.Distributed.Process.Management.Internal.Trace.Types as TT
+
 
 data Message = Ping (SendPort ProcessId) deriving (Typeable, Generic)
 
@@ -25,28 +28,30 @@ pingServerChannel = do
   mypid <- getSelfPid
   sendChan chan mypid
 
-$(remotable ['pingServerChannel])
+$(remotable ['Channel.pingServerChannel])
 
 master :: [NodeId] -> Process ()
 master peers = do
+  let flags = TT.defaultTraceFlags { TT.traceDied = Just TT.TraceAll }
   ps <- forM peers $ \nid -> do
     say $ printf "spawning on %s" (show nid)
-    spawn nid $(mkStaticClosure 'pingServerChannel)
+    TR.setTraceFlagsRemote flags nid
+    _ <- TR.startTraceRelay nid 
+    spawn nid $(mkStaticClosure 'Channel.pingServerChannel)
 
   -- mapM_ monitor ps
 
   ports <- forM ps $ \pid -> do
     say $ printf "pinging %s" (show pid)
-    (sendport, recvport) <- newChan
-
+    (sp, rp) <- newChan
     withMonitor pid $ do
-      send pid $ Ping sendport
+      send pid $ Ping sp
       receiveWait
         [ match $ \(ProcessMonitorNotification _ deadpid reason) -> do
             say $ printf "process %s died: %s" (show deadpid) (show reason)
             terminate
         ]
-    return recvport
+    return rp
 
   say $ "aaaaaaaaaaaaa"
   forM_ ports $ \port -> do
