@@ -22,13 +22,12 @@ instance Binary Message
 
 pingServerChannel :: Process ()
 pingServerChannel = do
-  say "dddddddddddd"
   Ping chan <- expect
   say $ printf "ping received from %s" (show chan)
   mypid <- getSelfPid
   sendChan chan mypid
 
-$(remotable ['Channel.pingServerChannel])
+$(remotable ['pingServerChannel])
 
 master :: [NodeId] -> Process ()
 master peers = do
@@ -37,9 +36,7 @@ master peers = do
     say $ printf "spawning on %s" (show nid)
     TR.setTraceFlagsRemote flags nid
     _ <- TR.startTraceRelay nid 
-    spawn nid $(mkStaticClosure 'Channel.pingServerChannel)
-
-  -- mapM_ monitor ps
+    spawn nid $(mkStaticClosure 'pingServerChannel)
 
   ports <- forM ps $ \pid -> do
     say $ printf "pinging %s" (show pid)
@@ -53,11 +50,8 @@ master peers = do
         ]
     return rp
 
-  say $ "aaaaaaaaaaaaa"
   forM_ ports $ \port -> do
-    say $ "bbbbbbbbbbbbbbbb"
     _ <- receiveChan port
-    say $ "ccccccccccccccc"
     return ()
 
   say "All pongs received"

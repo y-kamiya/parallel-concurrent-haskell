@@ -25,7 +25,7 @@ pingServer :: Process ()
 pingServer = do
   Ping chan <- expect
   -- liftIO $ threadDelay 5000000
-  -- say $ printf "ping received from %s" (show chan)
+  say $ printf "ping received from %s" (show chan)
   mypid <- getSelfPid
   sendChan chan $ "pong from " ++ show mypid
 

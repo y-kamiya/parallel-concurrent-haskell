@@ -11,6 +11,7 @@ import Control.Monad
 import Control.Distributed.Process hiding (Message(..))
 import Control.Distributed.Process.Serializable
 import Control.Distributed.Process.Internal.Closure.TH
+import qualified Control.Distributed.Process.Management.Internal.Trace.Remote as TR
 
 import DistribMain
 import qualified Channel as Channel
@@ -82,6 +83,6 @@ main = do
   case command of
     "simple" -> withArgs args $ distribMain (\_ -> master) Main.__remoteTable
     "multi" -> withArgs args $ distribMain  masterMulti Main.__remoteTable
-    "channel" -> withArgs args $ distribMain Channel.master Main.__remoteTable
+    "channel" -> withArgs args $ distribMain Channel.master TR.remoteTable
     "demo" -> withArgs args $ distribMain (\_ -> _master) Main.__remoteTable
 
