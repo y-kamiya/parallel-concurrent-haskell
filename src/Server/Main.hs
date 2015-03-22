@@ -1,24 +1,27 @@
 import System.IO
-import System.Environment (getArgs)
+import System.Environment (getArgs, withArgs)
+import Text.Printf
+import Network
 import Control.Monad
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import Text.Printf
-import Network
+import Control.Distributed.Process hiding (Message(..))
 
 import Chat
+import qualified DistribChat as DistribChat
 
 port :: Int
 port = 44444
 
 main :: IO ()
 main = do
-  [arg] <- getArgs
+  (arg:args) <- getArgs
   case arg of
     "trivial" -> trivial
     "simple" -> simple
     "chat" -> chat
+    "dchat" -> withArgs args $ DistribChat.defaultMain
     _ -> trivial
 
 chat :: IO ()
@@ -104,8 +107,3 @@ simple = withSocketsDo $ do
              line -> do
                hPutStrLn h $ show $ f * (read line :: Integer)
                loop f
-
-
-          
-
-
