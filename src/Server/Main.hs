@@ -7,9 +7,11 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Distributed.Process hiding (Message(..))
+import Control.Distributed.Process.Backend.SimpleLocalnet
 
 import Chat
 import qualified DistribChat as DistribChat
+import qualified DistribChatNoSlave as DistribChatNoSlave
 
 port :: Int
 port = 44444
@@ -22,6 +24,7 @@ main = do
     "simple" -> simple
     "chat" -> chat
     "dchat" -> withArgs args $ DistribChat.defaultMain
+    "noslave" -> DistribChatNoSlave.defaultMain args
     _ -> trivial
 
 chat :: IO ()
