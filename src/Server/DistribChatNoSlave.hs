@@ -68,8 +68,8 @@ data Message = Notice String
 instance Binary Message
 
 data PMessage
-  = MsgServers            [ProcessId]
-  | MsgSend               ClientName Message
+  = MsgSend               ClientName Message
+  -- | MsgServers            [ProcessId]
   | MsgBroadcast          Message
   | MsgKick               ClientName ClientName
   | MsgNewClient          ClientName ProcessId
@@ -77,6 +77,7 @@ data PMessage
   | MsgServerInfo         ProcessId
   | MsgWhereIsReply       WhereIsReply
   | MsgsMonitorNotice     ProcessMonitorNotification
+  | MsgDebug
   deriving (Typeable, Generic)
 
 instance Binary PMessage
@@ -135,7 +136,7 @@ broadcast server msg = do
 handleRemoteMessage :: Server -> PMessage -> Process ()
 handleRemoteMessage server@Server{..} msg = liftIO $ atomically $
   case msg of
-    MsgServers pids   -> writeTVar servers $ filter (/= spid) pids
+    -- MsgServers pids   -> writeTVar servers $ filter (/= spid) pids
     MsgSend name msg  -> void $ sendToName server name msg
     MsgBroadcast msg  -> broadcastLocal server msg
     MsgKick who by    -> kick server who by
@@ -155,24 +156,18 @@ handleRemoteMessage server@Server{..} msg = liftIO $ atomically $
 
     MsgServerInfo pid -> do
       addServer server pid
+      teachMyClient server pid
 
-    MsgWhereIsReply (WhereIsReply _ mPid) -> do
-      case mPid of
-        Nothing -> return ()
-        Just pid -> do
-          startMonitor server pid
-          sendRemote server pid $ MsgServerInfo spid
-          clientmap <- readTVar clients
-          forM_ (M.toList clientmap) $ \(name,_) ->
-            sendRemote server pid $ MsgNewClient name spid
-
-    MsgsMonitorNotice (ProcessMonitorNotification ref pid reason) -> do
-      finishMonitor server ref 
-      removeServer server pid
+    MsgDebug -> do
+      pids <- readTVar servers
+      clientmap <- readTVar clients
+      printServer server pids
+      printServer server $ M.keys clientmap
 
 addServer :: Server -> ProcessId -> STM ()
-addServer Server{..} pid = do
+addServer server@Server{..} pid = do
   pids <- readTVar servers
+  -- printServer server $ show pids
   if elem pid pids
     then return ()
     else writeTVar servers (pid:pids)
@@ -195,6 +190,17 @@ startMonitor Server{..} pid = writeTChan proxychan (void $ monitor pid)
 
 finishMonitor :: Server -> MonitorRef -> STM ()
 finishMonitor Server{..} ref = writeTChan proxychan (unmonitor ref)
+
+printServer :: Show a => Server -> a -> STM ()
+printServer Server{..} msg = writeTChan proxychan $ say $ show msg
+
+teachMyClient :: Server -> ProcessId -> STM ()
+teachMyClient server@Server{..} pid = do
+  clientmap <- readTVar clients
+  forM_ (M.toList clientmap) $ \(name,client) ->
+    case client of
+      ClientRemote _ -> return ()
+      ClientLocal _  -> sendRemote server pid $ MsgNewClient name spid
 
 -- copy from original chat
 checkAddClient :: Server -> Client -> STM Bool
@@ -278,7 +284,7 @@ tell server@Server{..} LocalClient{..} who s = do
     else hPutStrLn clientHandle $ who ++ " is not connected"
 
 handleMessage :: Server -> LocalClient -> Message -> IO Bool
-handleMessage server client@LocalClient{..} message = 
+handleMessage server@Server{..} client@LocalClient{..} message = 
   case message of
     Notice msg        -> output $ "*** " ++ msg
     Tell name msg     -> output $ "*" ++ name ++ "*: " ++ msg
@@ -294,6 +300,10 @@ handleMessage server client@LocalClient{..} message =
           return True
         ["/quit"] ->
           return False
+        ["/debug"] -> atomically $ do
+          sendRemoteAll server MsgDebug
+          sendRemote server spid MsgDebug
+          return True
         ('/':_):_ -> do
           hPutStrLn clientHandle $ "unrecognized command: " ++ msg
           return True
@@ -323,8 +333,31 @@ chatServer port = do
   liftIO $ forkIO (socketListener server port)
   spawnLocal $ proxy server
   forever $ do
-    m <- expect
-    handleRemoteMessage server m
+    receiveWait
+      [ match $ handleRemoteMessage server
+      , match $ handleMonitorNotification server
+      , match $ handleWhereIsReply server
+      , matchAny $ \_ -> return ()
+      ]
+
+handleMonitorNotification :: Server -> ProcessMonitorNotification -> Process ()
+handleMonitorNotification server (ProcessMonitorNotification ref pid reason) =
+  liftIO $ atomically $ do
+    finishMonitor server ref 
+    removeServer server pid
+
+handleWhereIsReply :: Server -> WhereIsReply -> Process ()
+handleWhereIsReply _ (WhereIsReply _ Nothing) = return ()
+handleWhereIsReply server@Server{..} (WhereIsReply _ (Just pid)) 
+  | pid == spid = return ()
+  | otherwise = do
+  -- say $ "[handleWhereIsReply] received pid = " ++ show pid
+  liftIO $ atomically $ do
+    -- printServer server $  show pid
+    addServer server pid
+    startMonitor server pid
+    sendRemote server pid $ MsgServerInfo spid
+    teachMyClient server pid
 
 $(remotable ['DistribChatNoSlave.chatServer])
 
