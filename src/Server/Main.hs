@@ -12,6 +12,7 @@ import Control.Distributed.Process.Backend.SimpleLocalnet
 import Chat
 import qualified DistribChat as DistribChat
 import qualified DistribChatNoSlave as DistribChatNoSlave
+import qualified KvsTest as KvsTest
 
 port :: Int
 port = 44444
@@ -25,6 +26,8 @@ main = do
     "chat" -> chat
     "dchat" -> withArgs args $ DistribChat.defaultMain
     "noslave" -> DistribChatNoSlave.defaultMain args
+    "kvstest" -> withArgs args $ KvsTest.defaultMain
+    -- "kvsmaster" -> KvsMaster.defaultMain
     _ -> trivial
 
 chat :: IO ()
