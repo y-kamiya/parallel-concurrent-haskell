@@ -12,7 +12,8 @@ import Control.Distributed.Process.Backend.SimpleLocalnet
 import Chat
 import qualified DistribChat as DistribChat
 import qualified DistribChatNoSlave as DistribChatNoSlave
-import qualified KvsTest as KvsTest
+import qualified KvsTest1 as KvsTest1
+import qualified KvsTest2 as KvsTest2
 
 port :: Int
 port = 44444
@@ -26,9 +27,12 @@ main = do
     "chat" -> chat
     "dchat" -> withArgs args $ DistribChat.defaultMain
     "noslave" -> DistribChatNoSlave.defaultMain args
-    "kvstest" -> withArgs args $ KvsTest.defaultMain
-    -- "kvsmaster" -> KvsMaster.defaultMain
-    _ -> trivial
+    "kvstest1" -> withArgs args $ KvsTest1.defaultMain
+    "kvstest2" -> withArgs args $ KvsTest2.defaultMain
+    _ -> do
+      print $ "arg: " ++ arg
+      print "not match defined arg. start trivial server"
+      trivial
 
 chat :: IO ()
 chat = do

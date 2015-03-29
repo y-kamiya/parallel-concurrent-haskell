@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module KvsTest where
+module KvsTest1 where
 
 import Control.Distributed.Process
 import Control.Monad.IO.Class
@@ -9,7 +9,7 @@ import System.IO
 
 import DistribMain
 
-import KvsMaster  (Database, createDB, get, set, rcdata)
+import Kvs1.KvsMaster  (createDB, rcdata, get, set)
 
 defaultMain = distribMain master rcdata
 
