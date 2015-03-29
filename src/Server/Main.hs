@@ -14,6 +14,7 @@ import qualified DistribChat as DistribChat
 import qualified DistribChatNoSlave as DistribChatNoSlave
 import qualified KvsTest1 as KvsTest1
 import qualified KvsTest2 as KvsTest2
+import qualified KvsTest3 as KvsTest3
 
 port :: Int
 port = 44444
@@ -29,6 +30,7 @@ main = do
     "noslave" -> DistribChatNoSlave.defaultMain args
     "kvstest1" -> withArgs args $ KvsTest1.defaultMain
     "kvstest2" -> withArgs args $ KvsTest2.defaultMain
+    "kvstest3" -> withArgs args $ KvsTest3.defaultMain
     _ -> do
       print $ "arg: " ++ arg
       print "not match defined arg. start trivial server"
