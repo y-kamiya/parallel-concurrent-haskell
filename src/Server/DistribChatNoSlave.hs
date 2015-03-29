@@ -76,7 +76,6 @@ data PMessage
   | MsgClientDisconnected ClientName ProcessId
   | MsgServerInfo         ProcessId
   | MsgWhereIsReply       WhereIsReply
-  | MsgsMonitorNotice     ProcessMonitorNotification
   | MsgDebug
   deriving (Typeable, Generic)
 
